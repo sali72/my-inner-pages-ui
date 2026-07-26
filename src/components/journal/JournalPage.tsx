@@ -557,7 +557,9 @@ export const JournalPage: React.FC<JournalPageProps> = ({
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(`${entry.title}\n\n${content}`);
-    } catch {}
+    } catch (error) {
+      console.error('Failed to copy entry:', error);
+    }
     setShowMenu(false);
   };
 
@@ -569,7 +571,9 @@ export const JournalPage: React.FC<JournalPageProps> = ({
       } else {
         await copyToClipboard();
       }
-    } catch {}
+    } catch (error) {
+      console.error('Failed to share entry:', error);
+    }
     setShowMenu(false);
   };
 

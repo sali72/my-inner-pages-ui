@@ -53,14 +53,18 @@ function readLocal(): PersistedSettings {
   try {
     const raw = localStorage.getItem(LOCAL_KEY);
     if (raw) return validate(JSON.parse(raw));
-  } catch {}
+  } catch (error) {
+    console.error('Failed to read theme settings locally:', error);
+  }
   return { ...DEFAULTS };
 }
 
 function writeLocal(settings: PersistedSettings) {
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(settings));
-  } catch {}
+  } catch (error) {
+    console.error('Failed to write theme settings locally:', error);
+  }
 }
 
 async function fetchRemote(): Promise<PersistedSettings | null> {
@@ -69,7 +73,9 @@ async function fetchRemote(): Promise<PersistedSettings | null> {
     if (data.preferences) {
       return validate(data.preferences);
     }
-  } catch {}
+  } catch (error) {
+    console.error('Failed to fetch remote theme settings:', error);
+  }
   return null;
 }
 

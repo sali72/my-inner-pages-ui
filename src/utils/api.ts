@@ -41,7 +41,9 @@ async function request<T>(
             try {
                 const body = await response.json();
                 detail = body.detail ?? detail;
-            } catch {}
+            } catch (error) {
+                console.error('Failed to parse API error response:', error);
+            }
 
             if (response.status === 401) {
                 Sentry.addBreadcrumb({

@@ -21,7 +21,7 @@ export const ShortSurvey: React.FC<ShortSurveyProps> = ({ trigger, onClose, sess
     try {
       await api.post('/feedback/dismiss', { trigger });
     } catch (error) {
-      console.error('Failed to dismiss survey:', error);
+      console.error('Error: Failed to dismiss survey:', error);
     }
     onClose();
   };
@@ -41,7 +41,7 @@ export const ShortSurvey: React.FC<ShortSurveyProps> = ({ trigger, onClose, sess
       });
       await api.post('/feedback/dismiss', { trigger });
     } catch (error) {
-      console.error('Failed to submit survey:', error);
+      console.error('Error: Failed to submit survey:', error);
     }
     setSubmitted(true);
   };

@@ -84,7 +84,9 @@ export function useChatStream(): UseChatStreamReturn {
           try {
             const errJson = await response.json();
             errorMsg = errJson.detail || errorMsg;
-          } catch {}
+          } catch (error) {
+            console.error('Failed to parse stream error response:', error);
+          }
           dispatch({ type: 'STREAM_ERROR', error: errorMsg });
           if (response.status === 401) {
             window.dispatchEvent(new CustomEvent('auth:expired'));

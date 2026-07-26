@@ -40,21 +40,27 @@ export const TagManager: React.FC<TagManagerProps> = ({ isOpen, onClose }) => {
       await renameTag.mutateAsync({ oldName: editingTag, newName: renameValue.trim() });
       setEditingTag(null);
       setRenameValue('');
-    } catch {}
+    } catch (error) {
+      console.error('Failed to update tag:', error);
+    }
   };
 
   const handleDelete = async (tagName: string) => {
     try {
       await deleteTag.mutateAsync(tagName);
       setConfirmDelete(null);
-    } catch {}
+    } catch (error) {
+      console.error('Failed to delete tag:', error);
+    }
   };
 
   const handleColorChange = async (tagName: string, color: string | null) => {
     try {
       await updateTagColor.mutateAsync({ name: tagName, color });
       setColorPicker(null);
-    } catch {}
+    } catch (error) {
+      console.error('Failed to update tag:', error);
+    }
   };
 
   return (

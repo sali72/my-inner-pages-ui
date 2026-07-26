@@ -103,7 +103,9 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   const handleCopy = async (entry: JournalEntry) => {
     try {
       await navigator.clipboard.writeText(`${entry.title}\n\n${entry.content}`);
-    } catch {}
+    } catch (error) {
+      console.error('Failed to copy entry:', error);
+    }
   };
 
   const handleShare = async (entry: JournalEntry) => {
@@ -114,7 +116,9 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
       } else {
         await navigator.clipboard.writeText(text);
       }
-    } catch {}
+    } catch (error) {
+      console.error('Failed to share entry:', error);
+    }
   };
 
   const handleConfirmDelete = () => {
