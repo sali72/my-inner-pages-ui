@@ -19,6 +19,7 @@ export const AlphaWarningModal: React.FC<AlphaWarningModalProps> = ({
         <button
           onClick={onDismiss}
           className="absolute top-4 right-4 p-1 rounded-lg hover:bg-accent-tint text-muted hover:text-body transition-colors"
+          aria-label="Close"
         >
           <X className="w-5 h-5" />
         </button>

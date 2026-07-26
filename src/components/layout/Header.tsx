@@ -31,6 +31,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onMenuClick}
           className="p-2 rounded-lg hover:bg-accent-tint"
+          aria-label="Open menu"
         >
           <Menu className="w-6 h-6 text-body" />
         </button>
@@ -45,6 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onNavigationClick}
           className="p-2 rounded-lg hover:bg-accent-tint"
           title="Chat History"
+          aria-label="Chat History"
         >
           <List className="w-6 h-6 text-body" />
         </button>
