@@ -33,7 +33,9 @@ async function request<T>(
     try {
       const body = await response.json();
       detail = body.detail ?? detail;
-    } catch {}
+    } catch (error) {
+      console.error('Failed to parse error response body:', error);
+    }
     throw new Error(detail);
   }
   return response.json();
