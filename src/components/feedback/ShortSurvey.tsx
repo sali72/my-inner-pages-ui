@@ -20,7 +20,9 @@ export const ShortSurvey: React.FC<ShortSurveyProps> = ({ trigger, onClose, sess
   const handleDismiss = async () => {
     try {
       await api.post('/feedback/dismiss', { trigger });
-    } catch {}
+    } catch (error) {
+      console.error('Failed to dismiss survey:', error);
+    }
     onClose();
   };
 
@@ -38,7 +40,9 @@ export const ShortSurvey: React.FC<ShortSurveyProps> = ({ trigger, onClose, sess
         },
       });
       await api.post('/feedback/dismiss', { trigger });
-    } catch {}
+    } catch (error) {
+      console.error('Failed to submit survey:', error);
+    }
     setSubmitted(true);
   };
 
