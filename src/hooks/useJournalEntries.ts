@@ -1,15 +1,16 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { JournalEntry } from '@/types';
 import { api } from '@utils/api';
-import { journalListResponseSchema, journalResponseSchema, type JournalResponse } from '@/types/schemas';
+import { journalListResponseSchema, journalResponseSchema } from '@/types/schemas';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCallback } from 'react';
 import { syncUnsyncedEntries as syncService } from '@/services/syncService';
+import type { z } from 'zod';
 
 const QUERY_KEY = ['journals'] as const;
 const PAGE_SIZE = 20;
 
-function mapEntry(item: JournalResponse): JournalEntry {
+function mapEntry(item: z.infer<typeof journalResponseSchema>): JournalEntry {
   return {
     id: item.id,
     title: item.title,
