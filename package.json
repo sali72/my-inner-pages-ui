@@ -10,9 +10,12 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@sentry/react": "^9.0.0",
+    "@sentry/vite-plugin": "^3.0.0",
     "@tanstack/react-query": "^5.101.2",
     "@tiptap/extension-collaboration": "^3.27.4",
     "@tiptap/extension-placeholder": "^3.27.4",
@@ -26,9 +29,7 @@
     "sonner": "^2.0.7",
     "y-indexeddb": "^9.0.12",
     "yjs": "^13.6.31",
-    "zod": "^4.4.3",
-    "@sentry/react": "^9.0.0",
-    "@sentry/vite-plugin": "^3.0.0"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
@@ -44,6 +45,7 @@
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6",
     "typescript": "^5.2.2",
-    "vite": "^7.1.12"
+    "vite": "^7.1.12",
+    "vitest": "^4.1.10"
   }
 }
