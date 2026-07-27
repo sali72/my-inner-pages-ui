@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { api } from '../api';
-import { authService } from '@/services/authService';
 
 vi.mock('@/services/authService', () => ({
   authService: {
