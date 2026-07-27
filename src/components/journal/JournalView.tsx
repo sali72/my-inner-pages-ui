@@ -192,10 +192,11 @@ export const JournalView: React.FC<JournalViewProps> = ({
     });
 
     const allEntries = Array.from(allEntriesMap.values());
-    let filtered = allEntries.filter(entry => {
+    const lowerSearchQuery = searchQuery.toLowerCase();
+    const filtered = allEntries.filter(entry => {
       const matchesSearch = searchQuery === '' ||
-        entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.content.toLowerCase().includes(searchQuery.toLowerCase());
+        entry.title.toLowerCase().includes(lowerSearchQuery) ||
+        entry.content.toLowerCase().includes(lowerSearchQuery);
       const matchesTags = selectedTags.length === 0 ||
         (tagMode === 'and'
           ? selectedTags.every(tag => entry.tags?.includes(tag))
