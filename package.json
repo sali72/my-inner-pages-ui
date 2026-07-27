@@ -1,6 +1,6 @@
 {
   "name": "my-inner-pages",
-  "version": "1.0.0",
+  "version": "0.4.0-alpha",
   "description": "A beautiful journaling application with AI insights",
   "private": true,
   "type": "module",
