@@ -225,7 +225,8 @@ export const JournalPage: React.FC<JournalPageProps> = ({
 
   useEffect(() => {
     const fromContent = parseHashTags(entry.content || '');
-    const orphaned = (entry.tags || []).filter(t => !fromContent.includes(t));
+    const fromContentSet = new Set(fromContent);
+    const orphaned = (entry.tags || []).filter(t => !fromContentSet.has(t));
     setExplicitTags(orphaned);
   }, [entry.id]);
 
