@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Laptop, Smartphone, Globe, Shield, Trash2, RefreshCw, LogOut } from 'lucide-react';
+import { Laptop, Smartphone, Globe, Shield, Trash2, RefreshCw } from 'lucide-react';
 import { authService, SessionResponse } from '@/services/authService';
-import { useAuth } from '@/contexts/AuthContext';
 import { ConfirmModal } from '@components/journal';
 
 export const ActiveSessionsCard: React.FC = () => {
-  const { logout } = useAuth();
   const [sessions, setSessions] = useState<SessionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [revokingFamilyId, setRevokingFamilyId] = useState<string | null>(null);
   const [showRevokeOthersModal, setShowRevokeOthersModal] = useState(false);
-  const [showLogoutCurrentModal, setShowLogoutCurrentModal] = useState(false);
   const [revokingOthers, setRevokingOthers] = useState(false);
 
   const fetchSessions = useCallback(async () => {
@@ -56,11 +53,6 @@ export const ActiveSessionsCard: React.FC = () => {
     } finally {
       setRevokingOthers(false);
     }
-  };
-
-  const handleConfirmLogoutCurrent = async () => {
-    setShowLogoutCurrentModal(false);
-    await logout();
   };
 
   const getDeviceIcon = (os: string) => {
@@ -150,21 +142,17 @@ export const ActiveSessionsCard: React.FC = () => {
                     </div>
                     <p className="text-xs text-secondary mt-0.5 truncate">
                       {session.ip_address ? `IP: ${session.ip_address} • ` : ''}
-                      {session.is_current ? 'Active Now' : `Last active: ${new Date(session.last_used_at).toLocaleDateString()}`}
+                      {session.is_current
+                        ? 'Active Now'
+                        : `Last active: ${new Date(session.last_used_at).toLocaleString(undefined, {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })}`}
                     </p>
                   </div>
                 </div>
 
-                {session.is_current ? (
-                  <button
-                    onClick={() => setShowLogoutCurrentModal(true)}
-                    title="Log out of this device"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/30 text-red-600 hover:bg-red-500/10 transition-all text-xs font-medium ml-2 shrink-0"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Log Out</span>
-                  </button>
-                ) : (
+                {!session.is_current && (
                   <button
                     onClick={() => handleRevokeSingle(session.family_id)}
                     disabled={revokingFamilyId === session.family_id}
@@ -189,16 +177,6 @@ export const ActiveSessionsCard: React.FC = () => {
         variant="danger"
         onConfirm={handleConfirmRevokeOthers}
         onCancel={() => setShowRevokeOthersModal(false)}
-      />
-
-      <ConfirmModal
-        isOpen={showLogoutCurrentModal}
-        title="Log Out of This Device"
-        message="Are you sure you want to log out of your current session on this device?"
-        confirmLabel="Log Out"
-        variant="danger"
-        onConfirm={handleConfirmLogoutCurrent}
-        onCancel={() => setShowLogoutCurrentModal(false)}
       />
     </>
   );
