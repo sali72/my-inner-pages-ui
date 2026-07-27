@@ -2,6 +2,8 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import * as Sentry from '@sentry/react';
 
+import { authService } from '@/services/authService';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v0';
 
 class ApiError extends Error {
@@ -14,11 +16,23 @@ class ApiError extends Error {
 }
 
 let consecutiveFailures = 0;
+let isRefreshing = false;
+let refreshSubscribers: Array<(success: boolean) => void> = [];
+
+function subscribeTokenRefresh(cb: (success: boolean) => void) {
+    refreshSubscribers.push(cb);
+}
+
+function onRefreshed(success: boolean) {
+    refreshSubscribers.forEach((cb) => cb(success));
+    refreshSubscribers = [];
+}
 
 async function request<T>(
     endpoint: string,
     options: RequestInit,
     schema?: z.ZodType<T>,
+    isRetry = false,
 ): Promise<T> {
     const startTime = performance.now();
 
@@ -44,6 +58,30 @@ async function request<T>(
             } catch {}
 
             if (response.status === 401) {
+                const isAuthEndpoint = endpoint.includes('/auth/refresh') || endpoint.includes('/auth/login');
+                
+                if (!isAuthEndpoint && !isRetry) {
+                    if (isRefreshing) {
+                        const refreshed = await new Promise<boolean>((resolve) => {
+                            subscribeTokenRefresh(resolve);
+                        });
+                        if (refreshed) {
+                            return request<T>(endpoint, options, schema, true);
+                        }
+                    } else {
+                        isRefreshing = true;
+                        try {
+                            await authService.refreshToken();
+                            isRefreshing = false;
+                            onRefreshed(true);
+                            return request<T>(endpoint, options, schema, true);
+                        } catch {
+                            isRefreshing = false;
+                            onRefreshed(false);
+                        }
+                    }
+                }
+
                 Sentry.addBreadcrumb({
                     category: 'auth',
                     message: 'Session expired',

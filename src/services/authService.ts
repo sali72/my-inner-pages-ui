@@ -57,6 +57,12 @@ export const authService = {
     });
   },
 
+  async refreshToken(): Promise<LoginResponse> {
+    return request<LoginResponse>('/auth/refresh', {
+      method: 'POST',
+    });
+  },
+
   async register(email: string, password: string, confirmPassword: string): Promise<void> {
     await request('/auth/register', {
       method: 'POST',
