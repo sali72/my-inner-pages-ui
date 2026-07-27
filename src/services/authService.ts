@@ -41,6 +41,22 @@ async function request<T>(
   return response.json();
 }
 
+export interface SessionResponse {
+  family_id: string;
+  device_name: string;
+  browser: string;
+  os: string;
+  ip_address?: string;
+  created_at: string;
+  last_used_at: string;
+  is_current: boolean;
+}
+
+export interface SessionListResponse {
+  sessions: SessionResponse[];
+  total_count: number;
+}
+
 export const authService = {
   async checkStatus(): Promise<UserResponse | null> {
     try {
@@ -61,6 +77,18 @@ export const authService = {
     return request<LoginResponse>('/auth/refresh', {
       method: 'POST',
     });
+  },
+
+  async getSessions(): Promise<SessionListResponse> {
+    return request<SessionListResponse>('/auth/sessions');
+  },
+
+  async revokeSession(familyId: string): Promise<void> {
+    await request(`/auth/sessions/${familyId}`, { method: 'DELETE' });
+  },
+
+  async revokeOtherSessions(): Promise<void> {
+    await request('/auth/sessions/revoke-others', { method: 'POST' });
   },
 
   async register(email: string, password: string, confirmPassword: string): Promise<void> {

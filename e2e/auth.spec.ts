@@ -212,4 +212,21 @@ test.describe('Auth flow', () => {
       page.getByText('Meet Yourself on the Page')
     ).toBeVisible({ timeout: 10000 });
   });
+
+  test('displays active devices and sessions section in settings', async ({ page }) => {
+    const user = await createUser(page);
+    await loginAsUser(page, user);
+
+    await expect(
+      page.getByRole('heading', { name: 'Your Journal', exact: true })
+    ).toBeVisible({ timeout: 10000 });
+
+    await page.locator('header button').first().click();
+    await page
+      .getByRole('button', { name: 'Settings', exact: true })
+      .click();
+
+    await expect(page.getByText('Active Devices & Sessions')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Current Device')).toBeVisible({ timeout: 10000 });
+  });
 });

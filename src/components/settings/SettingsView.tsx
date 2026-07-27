@@ -4,6 +4,8 @@ import { Mode, Accent, FontStyle, ContentFontSize } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { ConfirmModal } from '@components/journal';
 
+import { ActiveSessionsCard } from './ActiveSessionsCard';
+
 const FONT_FAMILIES: Record<FontStyle, string> = {
   serif: "'Lora', Georgia, serif",
   sans: "'Inter', system-ui, -apple-system, sans-serif",
@@ -241,6 +243,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
           </div>
         </section>
+
+        <ActiveSessionsCard />
 
         <section className="bg-[var(--bg-elevated)] border border-subtle rounded-xl p-5 space-y-4">
           <div className="flex items-center gap-2">
