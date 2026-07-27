@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Laptop, Smartphone, Globe, Shield, Trash2, RefreshCw } from 'lucide-react';
+import { Laptop, Smartphone, Globe, Shield, Trash2, RefreshCw, LogOut } from 'lucide-react';
 import { authService, SessionResponse } from '@/services/authService';
+import { useAuth } from '@/contexts/AuthContext';
 import { ConfirmModal } from '@components/journal';
 
 export const ActiveSessionsCard: React.FC = () => {
+  const { logout } = useAuth();
   const [sessions, setSessions] = useState<SessionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [revokingFamilyId, setRevokingFamilyId] = useState<string | null>(null);
   const [showRevokeOthersModal, setShowRevokeOthersModal] = useState(false);
+  const [showLogoutCurrentModal, setShowLogoutCurrentModal] = useState(false);
   const [revokingOthers, setRevokingOthers] = useState(false);
 
   const fetchSessions = useCallback(async () => {
@@ -16,7 +19,9 @@ export const ActiveSessionsCard: React.FC = () => {
       setLoading(true);
       setError(null);
       const res = await authService.getSessions();
-      setSessions(res.sessions);
+      // Sort sessions so current device is ALWAYS pinned to top
+      const sorted = [...res.sessions].sort((a, b) => (b.is_current ? 1 : 0) - (a.is_current ? 1 : 0));
+      setSessions(sorted);
     } catch (err: any) {
       setError(err?.message || 'Failed to load active sessions');
     } finally {
@@ -53,6 +58,11 @@ export const ActiveSessionsCard: React.FC = () => {
     }
   };
 
+  const handleConfirmLogoutCurrent = async () => {
+    setShowLogoutCurrentModal(false);
+    await logout();
+  };
+
   const getDeviceIcon = (os: string) => {
     const lower = os.toLowerCase();
     if (lower.includes('ios') || lower.includes('android')) {
@@ -80,9 +90,10 @@ export const ActiveSessionsCard: React.FC = () => {
               onClick={fetchSessions}
               disabled={loading}
               title="Refresh session list"
-              className="p-1.5 rounded-lg border border-default bg-surface text-secondary hover:text-primary hover:bg-surface-hover transition-all text-xs"
+              className="p-1.5 rounded-lg border border-default bg-surface text-secondary hover:text-primary hover:bg-surface-hover transition-all text-xs flex items-center gap-1"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
             </button>
 
             {hasOtherSessions && (
@@ -112,7 +123,11 @@ export const ActiveSessionsCard: React.FC = () => {
             {sessions.map((session) => (
               <div
                 key={session.family_id}
-                className="flex items-center justify-between p-3.5 rounded-lg bg-surface border border-default transition-all"
+                className={`flex items-center justify-between p-3.5 rounded-lg border transition-all ${
+                  session.is_current
+                    ? 'bg-accent-tint/20 border-accent/40 shadow-xs'
+                    : 'bg-surface border-default'
+                }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-full bg-accent-tint flex items-center justify-center shrink-0">
@@ -120,30 +135,44 @@ export const ActiveSessionsCard: React.FC = () => {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-primary truncate">
+                      <span className="text-sm font-semibold text-primary truncate">
                         {session.device_name}
                       </span>
                       {session.is_current && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent text-white">
-                          Current Device
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-xs">
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                          </span>
+                          This Device
                         </span>
                       )}
                     </div>
                     <p className="text-xs text-secondary mt-0.5 truncate">
                       {session.ip_address ? `IP: ${session.ip_address} • ` : ''}
-                      Last active: {new Date(session.last_used_at).toLocaleDateString()}
+                      {session.is_current ? 'Active Now' : `Last active: ${new Date(session.last_used_at).toLocaleDateString()}`}
                     </p>
                   </div>
                 </div>
 
-                {!session.is_current && (
+                {session.is_current ? (
+                  <button
+                    onClick={() => setShowLogoutCurrentModal(true)}
+                    title="Log out of this device"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/30 text-red-600 hover:bg-red-500/10 transition-all text-xs font-medium ml-2 shrink-0"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Log Out</span>
+                  </button>
+                ) : (
                   <button
                     onClick={() => handleRevokeSingle(session.family_id)}
                     disabled={revokingFamilyId === session.family_id}
-                    title="Revoke session"
-                    className="p-2 rounded-lg text-secondary hover:text-red-600 hover:bg-red-500/10 transition-all ml-2 shrink-0"
+                    title="Revoke remote session"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-secondary hover:text-red-600 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all ml-2 shrink-0 text-xs font-medium"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Revoke</span>
                   </button>
                 )}
               </div>
@@ -160,6 +189,16 @@ export const ActiveSessionsCard: React.FC = () => {
         variant="danger"
         onConfirm={handleConfirmRevokeOthers}
         onCancel={() => setShowRevokeOthersModal(false)}
+      />
+
+      <ConfirmModal
+        isOpen={showLogoutCurrentModal}
+        title="Log Out of This Device"
+        message="Are you sure you want to log out of your current session on this device?"
+        confirmLabel="Log Out"
+        variant="danger"
+        onConfirm={handleConfirmLogoutCurrent}
+        onCancel={() => setShowLogoutCurrentModal(false)}
       />
     </>
   );
