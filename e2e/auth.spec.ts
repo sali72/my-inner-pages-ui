@@ -161,4 +161,55 @@ test.describe('Auth flow', () => {
       page.getByText('Please enter a valid email address')
     ).toBeVisible();
   });
+
+  test('performs silent refresh when access token is removed or expired', async ({ page }) => {
+    const user = await createUser(page);
+    await loginAsUser(page, user);
+
+    await expect(
+      page.getByRole('heading', { name: 'Your Journal', exact: true })
+    ).toBeVisible({ timeout: 10000 });
+
+    // Simulate access token expiration by clearing only the access_token cookie
+    const cookies = await page.context().cookies();
+    const refreshCookie = cookies.find(c => c.name === 'refresh_token');
+
+    await page.context().clearCookies();
+
+    if (refreshCookie) {
+      await page.context().addCookies([
+        { name: 'refresh_token', value: refreshCookie.value, path: '/api/v0/auth/refresh', domain: 'localhost' },
+        { name: 'session_exists', value: '1', path: '/', domain: 'localhost' },
+      ]);
+    }
+
+    // Trigger an authenticated API request by navigating to Settings
+    await page.locator('header button').first().click();
+    await page
+      .getByRole('button', { name: 'Settings', exact: true })
+      .click();
+
+    // Silent refresh should have fetched a new access token seamlessly
+    await expect(page.getByText('Appearance Mode')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('redirects to landing page when refresh token is invalid or deleted', async ({ page }) => {
+    const user = await createUser(page);
+    await loginAsUser(page, user);
+
+    await expect(
+      page.getByRole('heading', { name: 'Your Journal', exact: true })
+    ).toBeVisible({ timeout: 10000 });
+
+    // Clear all cookies (both access_token and refresh_token)
+    await page.context().clearCookies();
+
+    // Trigger page reload
+    await page.reload();
+
+    // Should redirect back to landing page
+    await expect(
+      page.getByText('Meet Yourself on the Page')
+    ).toBeVisible({ timeout: 10000 });
+  });
 });
