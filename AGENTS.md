@@ -6,7 +6,8 @@ React 18 SPA with TypeScript, Vite, Tailwind CSS, TanStack Query, Playwright.
 - `npm install` — install dependencies
 - `npm run dev` — Vite dev server (port 5173, HMR)
 - `npm run build` — type-check + production build
-- `npm run test:e2e` — Playwright E2E tests (auto-starts dev server)
+- `npm test` — Vitest unit & component tests (fast in-memory execution)
+- `npm run test:e2e` — Playwright E2E tests (parallel multi-worker browser tests, uses system Chrome)
 - `npm run lint` — ESLint (zero warnings policy)
 
 ## Non-obvious tooling
@@ -45,10 +46,10 @@ React 18 SPA with TypeScript, Vite, Tailwind CSS, TanStack Query, Playwright.
 - **CSS:** Tailwind utility classes only — no CSS modules or styled-components
 - **Types:** TypeScript interfaces for models, type aliases for unions, Zod schemas for API
 
-## E2E testing
-- No test IDs — select via visible text, aria-labels, or semantic roles
-- Workers: 1, retries: 1, traces on first retry
-- Helpers in `e2e/fixtures.ts`: `createUser()`, `loginAsUser()`
+## Testing strategy
+- **Unit & Component Testing (Vitest):** Run with `npm test`. Uses `@testing-library/react` + `jsdom`. Vitest tests run fast in-memory without browser startup overhead and should be preferred for validating component rendering, custom hooks, utilities, and isolated state logic.
+- **E2E Integration Testing (Playwright):** Run with `npm run test:e2e`. Uses system Chrome (`channel: 'chrome'`) with parallel workers (`fullyParallel: true`). Use Playwright for validating end-to-end user journeys, authentication flows, cross-page persistence, and full system regressions.
+- **E2E conventions:** No test IDs — select via user-visible text, aria-labels, or semantic roles. Auth helpers available in `e2e/fixtures.ts` (`createUser()`, `loginAsUser()`). Always seed auth cookies in context before `page.goto('/')` to avoid double page reloads.
 
 ## Adding a new environment variable
 
