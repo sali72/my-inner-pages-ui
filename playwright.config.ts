@@ -8,6 +8,7 @@ export default defineConfig({
 
   use: {
     baseURL: 'http://localhost:5173',
+    channel: process.env.CI ? undefined : 'chrome',
     trace: 'on-first-retry',
   },
 

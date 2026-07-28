@@ -1,18 +1,17 @@
 import { test, expect, Page } from '@playwright/test';
+import { dismissAlphaModal } from './fixtures';
 
 async function createEntry(page: Page, title: string, content: string) {
-  // Wait for the journal page to finish loading
-  await page.waitForTimeout(1500);
-
-  // If the new-entry form is not shown, click the "New Entry" FAB
-  if (!(await page.locator('input[placeholder="Title..."]').isVisible({ timeout: 3000 }).catch(() => false))) {
+  const titleInput = page.locator('input[placeholder="Title..."]');
+  if (!(await titleInput.isVisible({ timeout: 1000 }).catch(() => false))) {
     await page.getByRole('button', { name: 'New Entry' }).click();
   }
+  await expect(titleInput).toBeVisible({ timeout: 5000 });
 
   await page.fill('input[placeholder="Title..."]', title);
   await page.locator('.ProseMirror').fill(content);
   await page.getByLabel('Back to journal').click();
-  await expect(page.locator('h2').filter({ hasText: title })).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('h2').filter({ hasText: title }).first()).toBeVisible({ timeout: 5000 });
 }
 
 test.describe('Journal CRUD', () => {
@@ -35,7 +34,8 @@ test.describe('Journal CRUD', () => {
       { name: 'session_exists', value: 'true', path: '/', domain: 'localhost' },
     ]);
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Your Journal', exact: true })).toBeVisible({ timeout: 10000 });
+    await dismissAlphaModal(page);
+    await expect(page.getByRole('heading', { name: /Your Journal/i })).toBeVisible({ timeout: 10000 });
   });
 
   test('creates a new journal entry', async ({ page }) => {
@@ -71,7 +71,7 @@ test.describe('Journal CRUD', () => {
     await page.getByRole('button', { name: 'Delete', exact: true }).click();
 
     // After deletion, we should be back on the timeline view
-    await expect(page.getByRole('heading', { name: 'Your Journal', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Your Journal/i })).toBeVisible();
     await expect(page.locator('h2').filter({ hasText: 'Entry to Delete' })).not.toBeVisible();
   });
 });

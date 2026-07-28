@@ -3,24 +3,25 @@ import { journalResponseSchema } from '@/types/schemas';
 import { getUnsyncedEntries, removeUnsyncedEntry } from '@utils/offlineStorage';
 import { getAuthSession, isCurrentAuthSession } from '@utils/authSession';
 
+const globalInFlight = new Set<string>();
+
 export async function syncUnsyncedEntries(
   onIdMigrate?: (oldId: string | number, newId: string | number) => void,
   onSyncComplete?: () => void,
 ): Promise<void> {
-  const session = getAuthSession();
-  if (session.generation === 0) return;
+  let session = getAuthSession();
+  if (session.generation === 0 && !document.cookie.includes('session_exists=true')) return;
+  session = getAuthSession();
 
   const unsynced = getUnsyncedEntries();
   const ids = Object.keys(unsynced);
   if (ids.length === 0) return;
 
-  const inFlight = new Set<string>();
-
   for (const id of ids) {
-    if (!isCurrentAuthSession(session)) break;
-    if (inFlight.has(id.toString())) continue;
+    if (session.generation > 0 && !isCurrentAuthSession(session)) break;
+    if (globalInFlight.has(id.toString())) continue;
     const entry = unsynced[id];
-    inFlight.add(id.toString());
+    globalInFlight.add(id.toString());
     try {
       if (id.toString().startsWith('draft-')) {
         const created = await api.post('/journals', {
@@ -47,7 +48,7 @@ export async function syncUnsyncedEntries(
     } catch (error) {
       console.error(`Failed to sync entry ${id}:`, error);
     } finally {
-      inFlight.delete(id.toString());
+      globalInFlight.delete(id.toString());
     }
   }
   onSyncComplete?.();

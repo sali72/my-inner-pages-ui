@@ -51,4 +51,16 @@ export async function loginAsUser(page: Page, user: TestUser): Promise<void> {
   }
   await page.context().addCookies(cookieList);
   await page.reload();
+  await dismissAlphaModal(page);
+}
+
+export async function dismissAlphaModal(page: Page): Promise<void> {
+  try {
+    const gotItBtn = page.getByRole('button', { name: 'Got it' });
+    await gotItBtn.waitFor({ state: 'visible', timeout: 4000 });
+    await gotItBtn.click();
+    await expect(gotItBtn).not.toBeVisible();
+  } catch {
+    // Modal did not appear or was already closed
+  }
 }
