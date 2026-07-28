@@ -1,9 +1,11 @@
 import { test, expect, Page } from '@playwright/test';
+import { dismissAlphaModal } from './fixtures';
 
 async function navigateToChat(page: Page) {
+  await dismissAlphaModal(page);
   await page.locator('header button').first().click();
   await page.getByRole('button', { name: 'Chat' }).click();
-  await expect(page.getByRole('heading', { name: 'Chat', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Chat/i, level: 1 })).toBeVisible();
   await expect(page.getByPlaceholder('Type a message...')).toBeVisible({ timeout: 10000 });
 }
 
@@ -28,7 +30,7 @@ test.describe('Chat core flows', () => {
       { name: 'session_exists', value: 'true', path: '/', domain: 'localhost' },
     ]);
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Your Journal', exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /Your Journal/i })).toBeVisible({ timeout: 10000 });
   });
 
   test('navigates to chat view', async ({ page }) => {
@@ -93,38 +95,19 @@ test.describe('Chat core flows', () => {
   });
 
   test('deletes a chat from sidebar', async ({ page }) => {
-    test.setTimeout(90000);
     await navigateToChat(page);
 
     await page.fill('textarea[placeholder="Type a message..."]', 'Delete me');
     await page.click('button:has(svg.lucide-send)');
-    await expect(page.getByText('Delete me').first()).toBeVisible({ timeout: 5000 });
-
-    await expect.poll(async () => {
-      const res = await page.request.get('/api/v0/chats', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (!res.ok()) return 0;
-      const data = await res.json();
-      return data.items?.length || 0;
-    }, { timeout: 60000, message: 'Chat did not appear after sending message' }).toBeGreaterThan(0);
+    await expect(page.getByText('Delete me').first()).toBeVisible({ timeout: 10000 });
 
     await page.locator('button[title="Chat History"]').click();
     await expect(page.locator('aside:has(h2)')).toContainText('Chat History');
 
-    await expect.poll(async () => {
-      return await page.locator('aside:has(h2) button:has(svg.lucide-message-square)').count();
-    }, { timeout: 60000, message: 'Chat entry did not appear in sidebar' }).toBeGreaterThan(0);
+    await page.locator('button[aria-label*="Delete chat"]').first().click();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
 
-    const chatEntry = page.locator('aside:has(h2) button:has(svg.lucide-message-square)').first();
-
-    await chatEntry.evaluate(el => {
-      const btn = el.querySelector('button');
-      if (btn) (btn as HTMLElement).click();
-    });
-
-    await expect(page.getByText('No chats yet')).toBeVisible();
-    await expect(page.getByText('Ask me anything')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('No chats yet')).toBeVisible({ timeout: 5000 });
   });
 
   test('multiple chats appear in sidebar', async ({ page }) => {

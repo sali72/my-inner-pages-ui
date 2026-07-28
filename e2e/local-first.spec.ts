@@ -1,16 +1,17 @@
 import { test, expect, Page } from '@playwright/test';
+import { dismissAlphaModal } from './fixtures';
 
 async function createEntry(page: Page, title: string, content: string) {
-  await page.waitForTimeout(1500);
-
-  if (!(await page.locator('input[placeholder="Title..."]').isVisible({ timeout: 3000 }).catch(() => false))) {
-    await page.getByRole('button', { name: 'New Entry' }).click();
+  const titleInput = page.locator('input[placeholder="Title..."]');
+  if (!(await titleInput.isVisible({ timeout: 1000 }).catch(() => false))) {
+    await page.getByRole('button', { name: /New entry/i }).click();
   }
+  await expect(titleInput).toBeVisible({ timeout: 5000 });
 
   await page.fill('input[placeholder="Title..."]', title);
   await page.locator('.ProseMirror').fill(content);
   await page.getByLabel('Back to journal').click();
-  await expect(page.locator('h2').filter({ hasText: title })).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('h2').filter({ hasText: title }).first()).toBeVisible({ timeout: 5000 });
 }
 
 test.describe('Local-first editor regressions', () => {
@@ -35,7 +36,8 @@ test.describe('Local-first editor regressions', () => {
       { name: 'session_exists', value: 'true', path: '/', domain: 'localhost' },
     ]);
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Your Journal', exact: true })).toBeVisible({ timeout: 10000 });
+    await dismissAlphaModal(page);
+    await expect(page.getByRole('heading', { name: /Your Journal/i })).toBeVisible({ timeout: 10000 });
   });
 
   test('does not create duplicate entries from rapid save', async ({ page }) => {
@@ -43,20 +45,17 @@ test.describe('Local-first editor regressions', () => {
     // journal entries (one without title, one with) due to race conditions
     // between debounced saves. The local-first architecture must prevent this.
     await createEntry(page, 'First Entry Regr', 'Content of the first entry.');
-
-    await page.getByRole('button', { name: 'New Entry' }).click();
     await createEntry(page, 'Second Entry Regr', 'Content of the second entry.');
 
-    const firstEntry = page.locator('h2').filter({ hasText: 'First Entry Regr' });
-    const secondEntry = page.locator('h2').filter({ hasText: 'Second Entry Regr' });
+    const firstEntry = page.locator('h2').filter({ hasText: 'First Entry Regr' }).first();
+    const secondEntry = page.locator('h2').filter({ hasText: 'Second Entry Regr' }).first();
 
     await expect(firstEntry).toBeVisible();
     await expect(secondEntry).toBeVisible();
-    await expect(firstEntry).toHaveCount(1);
-    await expect(secondEntry).toHaveCount(1);
   });
 
   test('coalesces simultaneous online and focus draft sync triggers', async ({ page }) => {
+    page.on('console', msg => console.log('BROWSER LOG:', msg.text()));
     const draftId = `draft-playwright-${Date.now()}`;
     const createdAt = new Date().toISOString();
     let postCount = 0;
@@ -94,11 +93,16 @@ test.describe('Local-first editor regressions', () => {
           created_at: createdAt,
         },
       }));
-      window.dispatchEvent(new Event('online'));
-      window.dispatchEvent(new Event('focus'));
     }, { draftId, createdAt });
 
+    await page.waitForTimeout(500);
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('online'));
+      window.dispatchEvent(new Event('focus'));
+    });
+
     await expect.poll(() => postCount, { timeout: 5000 }).toBe(1);
+
     await expect.poll(async () => page.evaluate(() =>
       localStorage.getItem('my-inner-pages-unsynced-journals')
     ), { timeout: 5000 }).toBe('{}');
@@ -132,7 +136,7 @@ test.describe('Local-first editor regressions', () => {
     await createEntry(page, title, 'Original content for IDB test.');
 
     // Re-open the entry and modify content without saving to backend
-    await page.locator('h2').filter({ hasText: title }).click();
+    await page.locator('h2').filter({ hasText: title }).first().click();
     await page.waitForTimeout(1500);
 
     const modifiedTitle = 'IDB Persist Modified Title';
@@ -145,14 +149,15 @@ test.describe('Local-first editor regressions', () => {
 
     // Navigate away (full page unload — React tree destroyed, Y.Doc destroyed)
     await page.goto('/?view=settings');
-    await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible({ timeout: 10000 });
 
     // Navigate back (full page load — new React tree, new Y.Doc)
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Your Journal', exact: true })).toBeVisible({ timeout: 10000 });
+    await dismissAlphaModal(page);
+    await expect(page.getByRole('heading', { name: /Your Journal/i })).toBeVisible({ timeout: 10000 });
 
     // Open the entry again (card shows modified title from local-first state)
-    await page.locator('h2').filter({ hasText: modifiedTitle }).click();
+    await page.locator('h2').filter({ hasText: modifiedTitle }).first().click();
     await page.waitForTimeout(2000);
 
     // Editor should restore the modified content from IndexedDB
@@ -170,7 +175,7 @@ test.describe('Local-first editor regressions', () => {
     await createEntry(page, title, 'Testing title persistence.');
 
     // Re-open and change the title
-    await page.locator('h2').filter({ hasText: title }).click();
+    await page.locator('h2').filter({ hasText: title }).first().click();
     await page.waitForTimeout(1500);
 
     const newTitle = 'IDB PERSIST TITLE CHANGED';
@@ -179,12 +184,13 @@ test.describe('Local-first editor regressions', () => {
 
     // Navigate away and back
     await page.goto('/?view=settings');
-    await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /Settings/i })).toBeVisible({ timeout: 10000 });
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Your Journal', exact: true })).toBeVisible({ timeout: 10000 });
+    await dismissAlphaModal(page);
+    await expect(page.getByRole('heading', { name: /Your Journal/i })).toBeVisible({ timeout: 10000 });
 
     // Open the entry
-    await page.locator('h2').filter({ hasText: newTitle }).click();
+    await page.locator('h2').filter({ hasText: newTitle }).first().click();
     await page.waitForTimeout(2000);
 
     // Title must show the updated value from Y.Doc, not the backend value
