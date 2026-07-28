@@ -2,6 +2,7 @@ import { test, expect, Page } from '@playwright/test';
 import { dismissAlphaModal } from './fixtures';
 
 async function navigateToChat(page: Page) {
+  await dismissAlphaModal(page);
   await page.locator('header button').first().click();
   await page.getByRole('button', { name: 'Chat' }).click();
   await expect(page.getByRole('heading', { name: /Chat/i, level: 1 })).toBeVisible();
