@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 
 const API_BASE = '/api/v0/auth';
 const TEST_PASSWORD = 'TestPassword123!';
@@ -41,23 +41,22 @@ export async function loginAsUser(page: Page, user: TestUser): Promise<void> {
   const cookies = await page.context().cookies();
   const refreshCookie = cookies.find(c => c.name === 'refresh_token');
 
-  await page.goto('/');
   const cookieList = [
-    { name: 'access_token', value: token, path: '/api/v0', domain: 'localhost' },
+    { name: 'access_token', value: token, path: '/', domain: 'localhost' },
     { name: 'session_exists', value: '1', path: '/', domain: 'localhost' },
   ];
   if (refreshCookie) {
     cookieList.push({ name: 'refresh_token', value: refreshCookie.value, path: '/api/v0/auth/refresh', domain: 'localhost' });
   }
   await page.context().addCookies(cookieList);
-  await page.reload();
+  await page.goto('/');
   await dismissAlphaModal(page);
 }
 
 export async function dismissAlphaModal(page: Page): Promise<void> {
   try {
     const gotItBtn = page.getByRole('button', { name: 'Got it' });
-    await gotItBtn.waitFor({ state: 'visible', timeout: 4000 });
+    await gotItBtn.waitFor({ state: 'visible', timeout: 5000 });
     await gotItBtn.click();
     await expect(gotItBtn).not.toBeVisible();
   } catch {

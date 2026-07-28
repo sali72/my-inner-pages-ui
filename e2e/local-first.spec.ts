@@ -15,10 +15,8 @@ async function createEntry(page: Page, title: string, content: string) {
 }
 
 test.describe('Local-first editor regressions', () => {
-  let accessToken: string;
-
-  test.beforeAll(async ({ request }) => {
-    const email = `e2e-lf-${Date.now()}@test.com`;
+  test.beforeEach(async ({ page, request }) => {
+    const email = `e2e-lf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`;
     await request.post('/api/v0/auth/register', {
       data: { email, password: 'TestPassword123!', confirm_password: 'TestPassword123!' },
     });
@@ -26,16 +24,13 @@ test.describe('Local-first editor regressions', () => {
       data: { email, password: 'TestPassword123!' },
     });
     const data = await res.json();
-    accessToken = data.access_token;
-  });
+    const accessToken = data.access_token;
 
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
     await page.context().addCookies([
       { name: 'access_token', value: accessToken, path: '/', domain: 'localhost' },
       { name: 'session_exists', value: 'true', path: '/', domain: 'localhost' },
     ]);
-    await page.reload();
+    await page.goto('/');
     await dismissAlphaModal(page);
     await expect(page.getByRole('heading', { name: /Your Journal/i })).toBeVisible({ timeout: 10000 });
   });
@@ -95,7 +90,7 @@ test.describe('Local-first editor regressions', () => {
       }));
     }, { draftId, createdAt });
 
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(300);
     await page.evaluate(() => {
       window.dispatchEvent(new Event('online'));
       window.dispatchEvent(new Event('focus'));
@@ -113,8 +108,8 @@ test.describe('Local-first editor regressions', () => {
     const modifiedContent = 'This edit is saved before the page is hidden.';
 
     await createEntry(page, title, 'Original content.');
-    await page.locator('h2').filter({ hasText: title }).click();
-    await page.waitForTimeout(1500);
+    await page.locator('h2').filter({ hasText: title }).first().click();
+    await page.waitForTimeout(300);
     await page.locator('.ProseMirror').fill(modifiedContent);
 
     await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
@@ -137,7 +132,7 @@ test.describe('Local-first editor regressions', () => {
 
     // Re-open the entry and modify content without saving to backend
     await page.locator('h2').filter({ hasText: title }).first().click();
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(300);
 
     const modifiedTitle = 'IDB Persist Modified Title';
     const modifiedContent = 'This content was typed locally and must survive page reload.';
@@ -145,7 +140,7 @@ test.describe('Local-first editor regressions', () => {
     await page.locator('.ProseMirror').fill(modifiedContent);
 
     // Allow y-indexeddb to flush pending writes to IndexedDB
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(400);
 
     // Navigate away (full page unload — React tree destroyed, Y.Doc destroyed)
     await page.goto('/?view=settings');
@@ -158,7 +153,7 @@ test.describe('Local-first editor regressions', () => {
 
     // Open the entry again (card shows modified title from local-first state)
     await page.locator('h2').filter({ hasText: modifiedTitle }).first().click();
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(400);
 
     // Editor should restore the modified content from IndexedDB
     await expect(page.locator('.ProseMirror')).toContainText(modifiedContent);
@@ -176,11 +171,11 @@ test.describe('Local-first editor regressions', () => {
 
     // Re-open and change the title
     await page.locator('h2').filter({ hasText: title }).first().click();
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(300);
 
     const newTitle = 'IDB PERSIST TITLE CHANGED';
     await page.fill('input[placeholder="Title..."]', newTitle);
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(400);
 
     // Navigate away and back
     await page.goto('/?view=settings');
@@ -191,7 +186,7 @@ test.describe('Local-first editor regressions', () => {
 
     // Open the entry
     await page.locator('h2').filter({ hasText: newTitle }).first().click();
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(400);
 
     // Title must show the updated value from Y.Doc, not the backend value
     const titleInput = page.locator('input[placeholder="Title..."]');

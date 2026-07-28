@@ -28,12 +28,11 @@ test.describe('Journal CRUD', () => {
     const data = await res.json();
     accessToken = data.access_token;
 
-    await page.goto('/');
     await page.context().addCookies([
       { name: 'access_token', value: accessToken, path: '/', domain: 'localhost' },
       { name: 'session_exists', value: 'true', path: '/', domain: 'localhost' },
     ]);
-    await page.reload();
+    await page.goto('/');
     await dismissAlphaModal(page);
     await expect(page.getByRole('heading', { name: /Your Journal/i })).toBeVisible({ timeout: 10000 });
   });
@@ -46,7 +45,7 @@ test.describe('Journal CRUD', () => {
     await createEntry(page, 'Entry to Edit', 'Original content.');
 
     // Click on the entry card to view/edit it
-    await page.locator('h2').filter({ hasText: 'Entry to Edit' }).click();
+    await page.locator('h2').filter({ hasText: 'Entry to Edit' }).first().click();
 
     // Modify content in the Tiptap editor
     await page.locator('.ProseMirror').fill('Updated content after editing.');
@@ -59,19 +58,23 @@ test.describe('Journal CRUD', () => {
 
   test('deletes a journal entry', async ({ page }) => {
     await createEntry(page, 'Entry to Delete', 'This will be deleted.');
+    await page.waitForTimeout(500);
 
     // Click on the entry card to view/edit it
-    await page.locator('h2').filter({ hasText: 'Entry to Delete' }).click();
+    await page.locator('h2').filter({ hasText: 'Entry to Delete' }).first().click();
 
     // Open options menu and click delete
     await page.getByRole('button', { name: 'Entry options' }).click();
     await page.getByRole('button', { name: 'Delete', exact: true }).click();
     
     // Accept confirm modal
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
 
     // After deletion, we should be back on the timeline view
     await expect(page.getByRole('heading', { name: /Your Journal/i })).toBeVisible();
-    await expect(page.locator('h2').filter({ hasText: 'Entry to Delete' })).not.toBeVisible();
+    await expect.poll(
+      async () => page.locator('h2').filter({ hasText: 'Entry to Delete' }).count(),
+      { timeout: 10000 }
+    ).toBe(0);
   });
 });

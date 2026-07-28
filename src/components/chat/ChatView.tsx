@@ -60,7 +60,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     setChatListError(null);
     const currentChatId = chatIdRef.current;
     if (selectedChatId === 'new') {
-      if (currentChatId !== null) {
+      if (currentChatId !== null || messages.length > 0) {
         startNewChat();
       }
     } else if (selectedChatId !== null) {

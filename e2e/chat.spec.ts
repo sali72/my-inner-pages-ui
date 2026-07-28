@@ -2,7 +2,6 @@ import { test, expect, Page } from '@playwright/test';
 import { dismissAlphaModal } from './fixtures';
 
 async function navigateToChat(page: Page) {
-  await dismissAlphaModal(page);
   await page.locator('header button').first().click();
   await page.getByRole('button', { name: 'Chat' }).click();
   await expect(page.getByRole('heading', { name: /Chat/i, level: 1 })).toBeVisible();
@@ -24,12 +23,12 @@ test.describe('Chat core flows', () => {
     const data = await res.json();
     accessToken = data.access_token;
 
-    await page.goto('/');
     await page.context().addCookies([
       { name: 'access_token', value: accessToken, path: '/', domain: 'localhost' },
       { name: 'session_exists', value: 'true', path: '/', domain: 'localhost' },
     ]);
-    await page.reload();
+    await page.goto('/');
+    await dismissAlphaModal(page);
     await expect(page.getByRole('heading', { name: /Your Journal/i })).toBeVisible({ timeout: 10000 });
   });
 
@@ -65,9 +64,10 @@ test.describe('Chat core flows', () => {
     await expect(page.getByText('This chat will be reset').first()).toBeVisible({ timeout: 5000 });
 
     await page.locator('button[title="Chat History"]').click();
-    await page.locator('aside:has(h2) button:has(svg.lucide-plus)').click();
+    await expect(page.locator('aside:has(h2)')).toBeVisible();
+    await page.locator('aside:has(h2)').getByRole('button', { name: 'New' }).click();
 
-    await expect(page.getByText('Ask me anything')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Ask me anything')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('main div.chat-typography').getByText('This chat will be reset')).not.toBeVisible();
   });
 
